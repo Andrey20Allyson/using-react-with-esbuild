@@ -12,16 +12,15 @@ for (let key in interfaces) {
   if (ip) {
     networkIP = ip;
     break;
-  } else {
-    throw Error('Can\'t find a network ip');
   }
 }
+
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const PUBLIC_FILES = fs.readdirSync(PUBLIC_DIR);
 
 /**@type {Map<string, http.RequestListener>} */
 const routes = new Map();
-/**@type {Map<string, string>} */
+/**@type {Map<string, {data: string, creation: number}>} */
 const cache = new Map();
 
 /**@type {http.RequestListener} */
@@ -52,14 +51,22 @@ async function staticHandler(req, res) {
 
   try {
     const cached = cache.get(url);
+    const fileStats = await fsp.stat(FILE_PATH);
 
-    if (cached) {
-      sendDataTo(res, cached, 304);
+    if (cached && cached.creation <= fileStats.mtimeMs) {
+      sendDataTo(res, cached.data, 304);
+
       return;
     } else {
       const data = await fsp.readFile(FILE_PATH);
 
       sendDataTo(res, data, 200);
+
+      cache.set(url, {
+        creation: Date.now(),
+        data,
+      });
+
       return;
     }
   } catch (e) {
@@ -70,7 +77,7 @@ async function staticHandler(req, res) {
 }
 
 for (const file of PUBLIC_FILES) {
-  const url = '/' + (file.endsWith('index.html') ? file.replace('index.html', '') : file); 
+  const url = '/' + (file.endsWith('index.html') ? file.replace('index.html', '') : file);
 
   routes.set(url, staticHandler);
 }
@@ -81,17 +88,19 @@ function requestHandler(req, res) {
 
   if (handler) {
     handler(req, res);
+    return;
   } else {
     notFoundHandler(req, res);
+    return;
   }
-
-  return;
 }
 
 const server = http.createServer(requestHandler);
 const PORT = 8080;
 
+console.log('Initializing Development Server...');
+
 server.listen(PORT, 'localhost');
 server.listen(PORT, networkIP, () => {
-  console.log(`[server is listening]\n  http://localhost:${PORT}\n  http://${networkIP}:${PORT}`);
+  console.log(`[server is listening]\n  Local: http://localhost:${PORT}\n  Network: http://${networkIP}:${PORT}`);
 });

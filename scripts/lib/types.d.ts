@@ -1,0 +1,1 @@
+export type DebounceType = <T extends Function>(func: T, delay: number) => T;
