@@ -1,15 +1,10 @@
 import fs from 'fs/promises';
 import _path from 'path';
 
-/**
- * 
- * @param {string} path 
- */
-export async function listAllFiles(path) {
+export async function listAllFiles(path: string) {
   const _files = await fs.readdir(path);
 
-  /**@type {string[]} */
-  const files = [];
+  const files: string[] = [];
 
   for (const file of _files) {
     const fullPath = _path.join(path, file);

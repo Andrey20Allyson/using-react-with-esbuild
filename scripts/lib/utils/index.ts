@@ -1,14 +1,13 @@
-/**@type {import('../types').DebounceType} */
-export function debounce(func, delay) {
-  let args = [];
+export function debounce<T extends (...arg: any[]) => void>(inFunction: T, delay: number) {
+  let args: any[] = [];
   let called = false;
 
   function callFunc() {
-    func(...args);
+    inFunction(...args);
     called = false;
   }
 
-  function outFunc(...newArgs) {
+  function handler(...newArgs: any[]) {
     if (called) {
       args = newArgs;
     } else {
@@ -18,5 +17,5 @@ export function debounce(func, delay) {
     }
   };
 
-  return outFunc;
+  return handler as T;
 }

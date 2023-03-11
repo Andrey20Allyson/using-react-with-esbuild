@@ -5,7 +5,7 @@ export default function App() {
   return (
     <div className='hood'>
       <p>
-        lo
+        olá mundo
       </p>
     </div>
   )

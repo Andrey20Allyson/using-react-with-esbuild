@@ -1,9 +1,10 @@
-import http from 'http';
-import fs from 'fs';
+import { IncomingMessage, ServerResponse } from 'http';
 import fsp from 'fs/promises';
+import path from 'path';
 
-/**@type {http.RequestListener} */
-function notFoundHandler(req, res) {
+const PUBLIC_DIR = path.join(process.cwd(), 'public');
+
+function notFoundHandler(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Content-Type', 'text/text');
   res.write('Error 404');
   res.statusCode = 404;
@@ -11,22 +12,19 @@ function notFoundHandler(req, res) {
   return;
 }
 
-/**
- * 
- * @param {any} data 
- * @param {http.ServerResponse} res
- * @param {number} code 
- */
-function sendDataTo(res, data, code) {
+export type CacheValue = {
+  data: string,
+  creation: number,
+} 
+
+function sendDataTo(res: ServerResponse, data: any, code: number) {
   res.write(data);
   res.statusCode = code;
   res.end();
 }
 
-function createStaticHandler(cache) {
-  
-  /**@type {http.RequestListener} */
-  async function staticHandler(req, res) {
+function createStaticHandler(cache: Map<string, CacheValue>) {
+  async function staticHandler(req: IncomingMessage, res: ServerResponse) {
     const { url = '/' } = req;
     const FILE_PATH = path.join(PUBLIC_DIR, url.at(-1) === '/' ? url + 'index.html' : url);
 
@@ -39,7 +37,7 @@ function createStaticHandler(cache) {
 
         return;
       } else {
-        const data = await fsp.readFile(FILE_PATH);
+        const data = await fsp.readFile(FILE_PATH, { encoding: 'utf-8' });
 
         sendDataTo(res, data, 200);
 

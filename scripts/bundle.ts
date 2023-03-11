@@ -1,16 +1,19 @@
-import esbuild, { buildSync } from 'esbuild';
+import esbuild from 'esbuild';
 import fs from 'fs';
 import chalk from 'chalk';
-import { debounce } from './lib/utils/index.mjs';
+import { debounce } from './lib/utils/index.js';
 
 const [WATCH_MODE, DEV_MODE] = [/watch/, /dev/].map(regexp => process.argv.some(v => regexp.test(v)));
 const ENDL = '\n\r';
 
 const OUT_FILE = 'public/bundle.js';
 
-/**@type {esbuild.BuildOptions} */
-const options = {
-  tsconfig: 'tsconfig.json',
+function createBuildOptions<T extends esbuild.BuildOptions>(options: T) {
+  return options;
+}
+
+const options = createBuildOptions({
+  tsconfig: 'src/tsconfig.json',
   entryPoints: [
     'src/index.tsx'
   ],
@@ -19,12 +22,12 @@ const options = {
   metafile: true,
   minify: !DEV_MODE,
   sourcemap: DEV_MODE,
-};
+});
 
 function bundle() {
-  const result = buildSync(options);
+  const result = esbuild.buildSync(options);
 
-  return result
+  return result;
 }
 
 const formater = Intl.NumberFormat('pt-br', {
@@ -37,9 +40,11 @@ const formater = Intl.NumberFormat('pt-br', {
  * 
  * @param {esbuild.BuildResult<esbuild.BuildOptions>} result 
  */
-function showBundleResult(result) {
+function showBundleResult(result: esbuild.BuildResult) {
   const outputData = result.metafile?.outputs?.[OUT_FILE];
+  const inputs = result.metafile?.inputs;
 
+  if (!inputs) return console.log('can\'t show result because result.metafile.inputs is undefined');
   if (outputData) {
     const bundleSize = formater.format(outputData.bytes);
 
@@ -49,7 +54,7 @@ function showBundleResult(result) {
     console.log(
       `[${chalk.whiteBright('bundle info')}]:` + ENDL +
       `  bundled with ${chalk.greenBright('success')} packages` + ENDL +
-      Object.entries(result.metafile.inputs)
+      Object.entries(inputs)
         .map(([k, v]) => `    ${k} - ${chalk.blueBright('size:')} ${formater.format(v.bytes)} ${chalk.blueBright('Bytes')}`)
         .join(ENDL) + ENDL +
       `  ${chalk.yellowBright('bundle size:')} ${bundleSize} ${chalk.yellowBright('Bytes')}`
@@ -64,8 +69,7 @@ if (WATCH_MODE) {
 
   showBundleResult(result);
 
-  /**@type {(eventName: string, fileName: string) => void} */
-  function watchHandler(eventName, fileName) {
+  function watchHandler(eventName: string, fileName: string) {
     const result = bundle();
 
     showBundleResult(result);
@@ -79,7 +83,6 @@ if (WATCH_MODE) {
 
   showBundleResult(result);
 }
-
 
 
 

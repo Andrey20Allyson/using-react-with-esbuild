@@ -3,28 +3,22 @@ import fs from 'fs';
 import fsp from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import { getFirstIPv4 } from './lib/utils/network';
 
-let networkIP;
-const interfaces = os.networkInterfaces();
-
-for (let key in interfaces) {
-  let ip = interfaces[key][1].address;
-  if (ip) {
-    networkIP = ip;
-    break;
-  }
-}
+let networkIP = getFirstIPv4();
 
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const PUBLIC_FILES = fs.readdirSync(PUBLIC_DIR);
 
-/**@type {Map<string, http.RequestListener>} */
-const routes = new Map();
-/**@type {Map<string, {data: string, creation: number}>} */
-const cache = new Map();
+type CacheValue = {
+  data: string,
+  creation: number,
+} 
 
-/**@type {http.RequestListener} */
-function notFoundHandler(req, res) {
+const routes = new Map<string, http.RequestListener>();
+const cache = new Map<string, CacheValue>();
+
+function notFoundHandler(req: http.IncomingMessage, res: http.ServerResponse) {
   res.setHeader('Content-Type', 'text/text');
   res.write('Error 404');
   res.statusCode = 404;
@@ -32,20 +26,13 @@ function notFoundHandler(req, res) {
   return;
 }
 
-/**
- * 
- * @param {any} data 
- * @param {http.ServerResponse} res
- * @param {number} code 
- */
-function sendDataTo(res, data, code) {
+function sendDataTo(res: http.ServerResponse, data: any, code: number) {
   res.write(data);
   res.statusCode = code;
   res.end();
 }
 
-/**@type {http.RequestListener} */
-async function staticHandler(req, res) {
+async function staticHandler(req: http.IncomingMessage, res: http.ServerResponse) {
   const { url = '/' } = req;
   const FILE_PATH = path.join(PUBLIC_DIR, url.at(-1) === '/' ? url + 'index.html' : url);
 
@@ -58,7 +45,7 @@ async function staticHandler(req, res) {
 
       return;
     } else {
-      const data = await fsp.readFile(FILE_PATH);
+      const data = await fsp.readFile(FILE_PATH, { encoding: 'utf-8' });
 
       sendDataTo(res, data, 200);
 
@@ -82,8 +69,7 @@ for (const file of PUBLIC_FILES) {
   routes.set(url, staticHandler);
 }
 
-/**@type {http.RequestListener} */
-function requestHandler(req, res) {
+function requestHandler(req: http.IncomingMessage, res: http.ServerResponse) {
   const handler = routes.get(req.url ?? '/');
 
   if (handler) {

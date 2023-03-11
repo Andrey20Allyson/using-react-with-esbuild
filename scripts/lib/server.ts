@@ -6,9 +6,9 @@ class Cache {
 } 
 
 class Server {
-  networkIP;
-  port;
-  cache;
+  networkIP: any;
+  port: any;
+  cache: any;
   
 }
 
