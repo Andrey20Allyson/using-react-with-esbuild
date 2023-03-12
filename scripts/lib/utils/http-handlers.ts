@@ -53,22 +53,18 @@ export function createStaticPages(config: StaticPagesConfig = {}): StaticPages {
         sendDataTo(res, cached.data, 304);
 
         return;
-      } else {
-        const data = await fsp.readFile(FILE_PATH, { encoding: 'utf-8' });
-
-        sendDataTo(res, data, 200);
-
-        cache.set(url, {
-          creation: Date.now(),
-          data,
-        });
-
-        return;
       }
+
+      const data = await fsp.readFile(FILE_PATH, { encoding: 'utf-8' });
+
+      sendDataTo(res, data, 200);
+
+      cache.set(url, {
+        creation: Date.now(),
+        data,
+      });
     } catch (e) {
-      console.log(e);
       notFoundHandler(req, res);
-      return;
     }
   }
 
