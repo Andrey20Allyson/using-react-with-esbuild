@@ -1,4 +1,6 @@
-export function debounce<T extends (...arg: any[]) => void>(inFunction: T, delay: number) {
+export type DebounceInputFunction = (...arg: any[]) => void;
+
+export function debounce<T extends DebounceInputFunction>(inFunction: T, delay: number) {
   let args: any[] = [];
   let called = false;
 
