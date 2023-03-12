@@ -1,8 +1,31 @@
 import { IncomingMessage, ServerResponse } from 'http';
 import fsp from 'fs/promises';
-import path from 'path';
+import _path from 'path';
 
-const PUBLIC_DIR = path.join(process.cwd(), 'public');
+export type CacheValue = {
+  data: string,
+  creation: number,
+}
+
+export type PageCache = Map<string, CacheValue>;
+export type StaticPageRequestHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+
+export interface StaticPagesConfig {
+  path?: string;
+  cache?: PageCache;
+}
+
+export interface StaticPages {
+  handler: StaticPageRequestHandler;
+  cache: PageCache;
+}
+
+export function sendDataTo(res: ServerResponse, data: any, code: number) {
+  res.setHeader('Content-Type', 'text/html');
+  res.write(data);
+  res.statusCode = code;
+  res.end();
+}
 
 function notFoundHandler(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Content-Type', 'text/text');
@@ -12,21 +35,15 @@ function notFoundHandler(req: IncomingMessage, res: ServerResponse) {
   return;
 }
 
-export type CacheValue = {
-  data: string,
-  creation: number,
-} 
+export function createStaticPages(config: StaticPagesConfig = {}): StaticPages {
+  const {
+    cache = new Map() as PageCache,
+    path = '.',
+  } = config;
 
-function sendDataTo(res: ServerResponse, data: any, code: number) {
-  res.write(data);
-  res.statusCode = code;
-  res.end();
-}
-
-function createStaticHandler(cache: Map<string, CacheValue>) {
-  async function staticHandler(req: IncomingMessage, res: ServerResponse) {
+  async function handler(req: IncomingMessage, res: ServerResponse) {
     const { url = '/' } = req;
-    const FILE_PATH = path.join(PUBLIC_DIR, url.at(-1) === '/' ? url + 'index.html' : url);
+    const FILE_PATH = _path.join(path, url.at(-1) === '/' ? url + 'index.html' : url);
 
     try {
       const cached = cache.get(url);
@@ -55,5 +72,8 @@ function createStaticHandler(cache: Map<string, CacheValue>) {
     }
   }
 
-  return staticHandler;
+  return {
+    cache,
+    handler
+  };
 }

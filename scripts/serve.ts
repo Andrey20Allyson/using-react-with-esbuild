@@ -4,6 +4,9 @@ import fsp from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { getFirstIPv4 } from './lib/utils/network';
+import { startSync } from './lib/utils/start-env';
+
+startSync();
 
 let networkIP = getFirstIPv4();
 
